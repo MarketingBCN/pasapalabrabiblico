@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pasapalabra Bíblico</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Montserrat', sans-serif;
+            overflow-x: hidden;
+        }
+        .rosco {
+            width: 100%;
+            height: 100%;
+            position: relative;
+        }
+        .letter-circle {
+            position: absolute;
+            width: 44px;
+            height: 44px;
+            background-color: #3b82f6; /* bg-blue-500 */
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.5rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border: 3px solid white;
+        }
+        .letter-circle.active {
+            transform: scale(1.3) !important;
+            background-color: #f59e0b; /* bg-amber-500 */
+            z-index: 10;
+        }
+        .letter-circle.correct {
+            background-color: #22c55e; /* bg-green-500 */
+        }
+        .letter-circle.incorrect {
+            background-color: #ef4444; /* bg-red-500 */
+        }
+        /* Ajustes para pantallas más pequeñas */
+        @media (max-width: 640px) {
+            .letter-circle {
+                width: 34px;
+                height: 34px;
+                font-size: 1.1rem;
+                border-width: 2px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div id="game-container" class="flex flex-col items-center justify-center min-h-screen p-4">
+        
+        <h1 class="text-3xl md:text-5xl font-bold text-blue-600 mb-4 text-center">Pasapalabra Bíblico</h1>
+
+        <!-- Barra de Información -->
+        <div class="flex items-center justify-between w-full max-w-lg mb-6 bg-white p-3 rounded-xl shadow-md">
+            <div id="timer" class="text-2xl md:text-3xl font-bold text-blue-600 bg-blue-100 px-4 py-2 rounded-lg">200</div>
+            <div class="flex items-center space-x-4">
+                <div class="text-center">
+                     <div id="score-correct" class="text-xl md:text-2xl font-bold text-green-500">0</div>
+                     <div class="text-xs text-gray-500">ACIERTOS</div>
+                </div>
+                <div class="text-center">
+                    <div id="score-incorrect" class="text-xl md:text-2xl font-bold text-red-500">0</div>
+                    <div class="text-xs text-gray-500">FALLOS</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenedor del Rosco y Panel Central -->
+        <div id="rosco-wrapper" class="relative w-[360px] h-[360px] sm:w-[500px] sm:h-[500px]">
+            <!-- El Rosco -->
+            <div id="rosco" class="rosco">
+                <!-- Las letras se generan aquí con JS -->
+            </div>
+            
+            <!-- Panel Central -->
+            <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-3/5">
+                 <div class="bg-white p-4 sm:p-6 rounded-2xl shadow-xl w-full">
+                    <div id="question-container" class="mb-4 text-center">
+                        <p id="question-letter" class="font-bold text-lg text-amber-600 mb-2">Con la A:</p>
+                        <p id="question-text" class="text-gray-700 text-sm sm:text-base min-h-[90px] sm:min-h-[100px] flex items-center justify-center">¡Prepárate!</p>
+                    </div>
+                    <div class="flex flex-col space-y-3">
+                        <input type="text" id="answer-input" class="w-full px-3 py-2 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-blue-500 text-center" placeholder="Tu respuesta...">
+                        <div class="grid grid-cols-2 gap-3">
+                           <button id="submit-btn" class="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105">Responder</button>
+                           <button id="pass-btn" class="w-full bg-amber-500 hover:bg-amber-600 text-white font-bold py-3 px-4 rounded-lg transition-transform transform hover:scale-105">Pasa</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Resultados -->
+    <div id="result-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl p-8 text-center shadow-2xl transform transition-all max-w-sm w-full">
+            <h2 id="modal-title" class="text-3xl font-bold mb-4">¡Juego Terminado!</h2>
+            <p id="modal-message" class="text-lg mb-6">Este es tu resultado final.</p>
+            <div class="flex justify-around mb-8">
+                <div class="text-center">
+                    <p class="text-4xl font-bold text-green-500" id="modal-correct"></p>
+                    <p class="text-gray-600">Aciertos</p>
+                </div>
+                <div class="text-center">
+                    <p class="text-4xl font-bold text-red-500" id="modal-incorrect"></p>
+                    <p class="text-gray-600">Fallos</p>
+                </div>
+            </div>
+            <button id="play-again-btn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-transform transform hover:scale-105">Jugar de Nuevo</button>
+        </div>
+    </div>
+
+
+    <script>
+        const roscoElement = document.getElementById('rosco');
+        const timerElement = document.getElementById('timer');
+        const questionLetterElement = document.getElementById('question-letter');
+        const questionTextElement = document.getElementById('question-text');
+        const answerInputElement = document.getElementById('answer-input');
+        const submitBtn = document.getElementById('submit-btn');
+        const passBtn = document.getElementById('pass-btn');
+        const scoreCorrectElement = document.getElementById('score-correct');
+        const scoreIncorrectElement = document.getElementById('score-incorrect');
+        const resultModal = document.getElementById('result-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMessage = document.getElementById('modal-message');
+        const modalCorrect = document.getElementById('modal-correct');
+        const modalIncorrect = document.getElementById('modal-incorrect');
+        const playAgainBtn = document.getElementById('play-again-btn');
+
+        // Definición de las preguntas. ¡Aquí puedes añadir todas las que quieras!
+        const allQuestions = {
+            'A': { type: 'starts', question: "Sentimiento de afecto universal que Dios nos pide tener. Es lo contrario al odio y la base de la vida cristiana. A veces es difícil sentirlo por quienes nos tratan mal, pero Jesús nos enseñó a poner la otra mejilla.", answer: "Amor" },
+            'B': { type: 'starts', question: "Gran ciudad y imperio de Mesopotamia, famosa por su torre y por ser el lugar de exilio del pueblo de Judá. Simboliza la soberbia y la confusión del mundo cuando se aleja de Dios.", answer: "Babilonia" },
+            'C': { type: 'starts', question: "Lugar donde Jesús fue crucificado. Simboliza el sacrificio máximo por amor y nos recuerda que incluso en los momentos de mayor sufrimiento y aparente derrota, puede surgir la victoria y la esperanza.", answer: "Calvario" },
+            'D': { type: 'starts', question: "Rey de Israel que venció al gigante Goliat. Su historia nos enseña que la valentía no depende del tamaño o la fuerza física, sino de la confianza en Dios para enfrentar los 'gigantes' de nuestra vida (miedos, presiones, etc.).", answer: "David" },
+            'E': { type: 'starts', question: "Se considera la 'buena noticia' del Nuevo Testamento. Nos habla de la vida y enseñanzas de Jesús, un manual para vivir una vida con propósito y a contracorriente de un mundo egoísta.", answer: "Evangelio" },
+            'F': { type: 'starts', question: "Confianza o creencia en algo o alguien. En la Biblia, es la certeza en lo que no se ve. Es el motor que nos mueve a actuar correctamente aunque no veamos el resultado inmediato.", answer: "Fe" },
+            'G': { type: 'starts', question: "Gigante filisteo derrotado por David. Representa los grandes obstáculos que a veces parecen invencibles, pero que con fe y la estrategia correcta (no siempre la convencional) podemos superar.", answer: "Goliat" },
+            'H': { type: 'starts', question: "Cualidad de una persona que no se engrandece y reconoce sus limitaciones. Jesús dijo que los que la poseen heredarán la tierra. Es lo contrario al orgullo que tanto abunda en redes sociales.", answer: "Humildad" },
+            'I': { type: 'starts', question: "Lugar de culto para la comunidad cristiana. No es solo un edificio, sino un lugar de encuentro, apoyo y crecimiento espiritual, como un equipo donde todos reman en la misma dirección.", answer: "Iglesia" },
+            'J': { type: 'starts', question: "Hijo de Dios y figura central del cristianismo. Su vida es el mayor ejemplo de amor, sacrificio y de vivir para los demás en lugar de para uno mismo.", answer: "Jesús" },
+            'L': { type: 'contains', question: "Mujer de la que Jesús expulsó siete demonios y una de sus más fieles seguidoras. Su historia es un poderoso recordatorio de que no importa nuestro pasado, siempre podemos ser transformados y tener un nuevo comienzo.", answer: "Magdalena" },
+            'M': { type: 'starts', question: "Profeta que recibió los Diez Mandamientos. Lideró a su pueblo fuera de la esclavitud, demostrando que un solo líder con convicción puede guiar a muchos hacia la libertad y un futuro mejor.", answer: "Moisés" },
+            'N': { type: 'starts', question: "Constructor del arca que salvó a su familia y a los animales del diluvio. Fue considerado 'loco' por sus contemporáneos, pero su obediencia a Dios en contra de la opinión popular lo salvó. ¿Te atreves a ser diferente por tus convicciones?", answer: "Noé" },
+            'O': { type: 'starts', question: "Forma de comunicarse con Dios. No se necesitan palabras rebuscadas, es una conversación sincera con un Padre que siempre escucha, especialmente cuando te sientes solo o incomprendido.", answer: "Oración" },
+            'P': { type: 'starts', question: "Sentimiento opuesto a la ansiedad y al conflicto, que Jesús prometió a sus seguidores. Es una calma interior que no depende de las circunstancias externas, sino de la confianza en Dios.", answer: "Paz" },
+            'Q': { type: 'starts', question: "Significa 'amar' o 'desear' algo o a alguien. La Biblia nos enseña a amar a Dios sobre todas las cosas y al prójimo como a nosotros mismos, el mandamiento más importante.", answer: "Querer" },
+            'R': { type: 'starts', question: "Volver a la vida después de la muerte. Es la creencia central del cristianismo sobre Jesús y la promesa de vida eterna para los creyentes. Simboliza la victoria definitiva sobre la muerte y el pecado.", answer: "Resurrección" },
+            'S': { type: 'starts', question: "Hombre de fuerza extraordinaria que fue traicionado por Dalila. Su historia nos advierte sobre cómo las malas compañías y ceder a la tentación pueden robarnos nuestra fuerza y propósito.", answer: "Sansón" },
+            'T': { type: 'starts', question: "Lugar sagrado en Jerusalén. Jesús enseñó que nuestro propio cuerpo es '___ del Espíritu Santo', lo que nos llama a cuidarlo y respetarlo, en lugar de dañarlo con vicios o malas decisiones.", answer: "Templo" },
+            'U': { type: 'starts', question: "Cualidad que se le atribuye a Dios por ser el único y soberano. En un mundo con tantos 'ídolos' (fama, dinero, popularidad), reconocer a Dios como el único nos da una brújula moral clara.", answer: "Único" },
+            'V': { type: 'starts', question: "Lo contrario a la mentira. Jesús dijo que 'la ___ os hará libres', enseñando que vivir con honestidad y transparencia nos libera de la carga del engaño.", answer: "Verdad" },
+            'X': { type: 'contains', question: "Libro del Antiguo Testamento que narra la salida de los israelitas de Egipto. Representa la liberación de cualquier tipo de esclavitud (vicios, rencores, miedos) hacia una vida plena.", answer: "Éxodo" },
+            'Y': { type: 'starts', question: "Pieza de madera que une a dos bueyes para arar. Jesús dijo: 'Mi ___ es fácil y mi carga ligera', invitándonos a compartir nuestras cargas con él para que el camino de la vida no sea tan pesado.", answer: "Yugo" },
+            'Z': { type: 'starts', question: "Hombre de baja estatura que se subió a un árbol para ver a Jesús y cambió su vida por completo. Su historia demuestra que nunca es tarde para arrepentirse y que un encuentro con Jesús puede transformarlo todo.", answer: "Zaqueo" }
+        };
+
+        let questions = [];
+        const alphabet = Object.keys(allQuestions);
+
+        let currentQuestionIndex = 0;
+        let scoreCorrect = 0;
+        let scoreIncorrect = 0;
+        let timer;
+        let timeLeft = 200;
+        let gameActive = false;
+
+        function setupRosco() {
+            roscoElement.innerHTML = '';
+            const letterCircleSize = window.innerWidth < 640 ? 34 : 44;
+            const radius = roscoElement.offsetWidth / 2 - (letterCircleSize / 2); 
+            questions.forEach((q, i) => {
+                const angle = (i / questions.length) * 2 * Math.PI - (Math.PI / 2);
+                const x = radius * Math.cos(angle) + radius;
+                const y = radius * Math.sin(angle) + radius;
+                
+                const letterDiv = document.createElement('div');
+                letterDiv.classList.add('letter-circle');
+                letterDiv.id = `letter-${q.letter}`;
+                letterDiv.textContent = q.letter;
+                letterDiv.style.left = `${x}px`;
+                letterDiv.style.top = `${y}px`;
+                letterDiv.style.transform = 'translate(-50%, -50%)';
+                roscoElement.appendChild(letterDiv);
+            });
+        }
+        
+        function initGame() {
+            questions = alphabet.map(letter => ({
+                letter: letter,
+                question: allQuestions[letter].question,
+                answer: allQuestions[letter].answer,
+                type: allQuestions[letter].type,
+                status: 'pending' // pending, correct, incorrect, passed
+            }));
+
+            currentQuestionIndex = 0;
+            scoreCorrect = 0;
+            scoreIncorrect = 0;
+            timeLeft = 200;
+            gameActive = true;
+
+            if (timer) clearInterval(timer);
+            updateScore();
+            setupRosco();
+            displayQuestion();
+            startTimer();
+
+            resultModal.classList.add('hidden');
+            answerInputElement.disabled = false;
+            submitBtn.disabled = false;
+            passBtn.disabled = false;
+        }
+
+        function displayQuestion() {
+            if (!gameActive) return;
+
+            const current = questions[currentQuestionIndex];
+            
+            if (current.type === 'contains') {
+                questionLetterElement.textContent = `Contiene la ${current.letter}:`;
+            } else {
+                questionLetterElement.textContent = `Con la ${current.letter}:`;
+            }
+            
+            questionTextElement.innerHTML = current.question;
+            answerInputElement.value = '';
+            answerInputElement.focus();
+
+            document.querySelectorAll('.letter-circle').forEach(c => c.classList.remove('active'));
+            document.getElementById(`letter-${current.letter}`).classList.add('active');
+        }
+
+        function startTimer() {
+            timerElement.textContent = timeLeft;
+            timer = setInterval(() => {
+                timeLeft--;
+                timerElement.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame("¡Se acabó el tiempo!");
+                }
+            }, 1000);
+        }
+
+        function moveToNextQuestion() {
+            const initialIndex = currentQuestionIndex;
+            let questionsAvailable = false;
+            for(let i = 0; i < questions.length; i++) {
+                if(questions[i].status === 'pending' || questions[i].status === 'passed') {
+                    questionsAvailable = true;
+                    break;
+                }
+            }
+
+            if (!questionsAvailable) {
+                endGame();
+                return;
+            }
+
+            do {
+                currentQuestionIndex = (currentQuestionIndex + 1) % questions.length;
+            } while (questions[currentQuestionIndex].status !== 'pending' && questions[currentQuestionIndex].status !== 'passed');
+            
+            displayQuestion();
+        }
+        
+        function checkAnswer() {
+            if (!gameActive) return;
+
+            answerInputElement.disabled = true;
+            submitBtn.disabled = true;
+            passBtn.disabled = true;
+
+            const current = questions[currentQuestionIndex];
+            const userAnswer = answerInputElement.value.trim().toLowerCase();
+            const correctAnswer = current.answer.toLowerCase();
+            
+            const normalizedUserAnswer = userAnswer.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+            const normalizedCorrectAnswer = correctAnswer.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+            const letterElement = document.getElementById(`letter-${current.letter}`);
+            letterElement.classList.remove('active');
+
+            if (normalizedUserAnswer === normalizedCorrectAnswer) {
+                current.status = 'correct';
+                scoreCorrect++;
+                letterElement.classList.add('correct');
+                questionTextElement.innerHTML = `<span class="text-green-500 font-bold">¡Correcto!</span>`;
+                updateScore();
+                setTimeout(() => {
+                    answerInputElement.disabled = false;
+                    submitBtn.disabled = false;
+                    passBtn.disabled = false;
+                    moveToNextQuestion();
+                }, 1200);
+            } else {
+                current.status = 'incorrect';
+                scoreIncorrect++;
+                letterElement.classList.add('incorrect');
+                questionLetterElement.textContent = `¡Fallo!`;
+                questionTextElement.innerHTML = `La respuesta correcta era:<br><strong class="text-blue-600 text-lg">${current.answer}</strong>`;
+                updateScore();
+                setTimeout(() => {
+                    answerInputElement.disabled = false;
+                    submitBtn.disabled = false;
+                    passBtn.disabled = false;
+                    moveToNextQuestion();
+                }, 3000);
+            }
+        }
+
+        function passQuestion() {
+            if (!gameActive) return;
+            questions[currentQuestionIndex].status = 'passed';
+            moveToNextQuestion();
+        }
+
+        function updateScore() {
+            scoreCorrectElement.textContent = scoreCorrect;
+            scoreIncorrectElement.textContent = scoreIncorrect;
+        }
+        
+        function endGame(message = "¡Has completado el rosco!") {
+            gameActive = false;
+            clearInterval(timer);
+
+            modalTitle.textContent = (scoreCorrect === questions.length && scoreIncorrect === 0) ? "¡Rosco completado!" : "Juego Terminado";
+            modalMessage.textContent = message;
+            modalCorrect.textContent = scoreCorrect;
+            modalIncorrect.textContent = scoreIncorrect;
+
+            resultModal.classList.remove('hidden');
+            answerInputElement.disabled = true;
+            submitBtn.disabled = true;
+            passBtn.disabled = true;
+        }
+
+        // Event Listeners
+        submitBtn.addEventListener('click', checkAnswer);
+        passBtn.addEventListener('click', passQuestion);
+        playAgainBtn.addEventListener('click', initGame);
+        answerInputElement.addEventListener('keyup', (e) => {
+            if (e.key === 'Enter') {
+                checkAnswer();
+            }
+        });
+
+        window.addEventListener('resize', setupRosco);
+        
+        // Iniciar el juego al cargar la página
+        initGame();
+
+    </script>
+</body>
+</html>
